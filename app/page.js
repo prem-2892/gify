@@ -1,65 +1,43 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-
-import { Input, Spinner } from '@nextui-org/react'
-import InfiniteScroll from 'react-infinite-scroll-component'
-// Adjust import based on your component structure
-import Gif from './[components]/Gif'
-import { fetchGifs, resetGifs } from '@/lib/features/gif/gifSlice'
+import {
+  fetchGIFs,
+  setSearchQuery,
+  loadFavoritesFromLocalStorage,
+} from '@/lib/features/gif/gifSlice' // Adjust path as necessary
+import Gif from './[components]/Gif' // Adjust import path
+// Create a spinner component
+import { Input, Pagination, Spinner } from '@nextui-org/react'
 
 const Home = () => {
-  const [searchQuery, setSearchQuery] = useState('')
   const dispatch = useDispatch()
-  const { gifs, pagination, loading, error } = useSelector(
+  const { gifs, status, page, searchQuery, favorites } = useSelector(
     (state) => state.gifs
   )
+  const [currentPage, setCurrentPage] = useState(1)
 
+  // Fetch GIFs and favorites from local storage
   useEffect(() => {
-    // Fetch trending GIFs by default
-    if (!searchQuery.trim()) {
-      dispatch(
-        fetchGifs({
-          searchQuery: 'trending',
-          limit: pagination.limit,
-          offset: pagination.offset,
-        })
-      )
-    }
-  }, [dispatch, searchQuery, pagination.limit, pagination.offset])
+    dispatch(fetchGIFs({ searchQuery, page: currentPage - 1 }))
+    dispatch(loadFavoritesFromLocalStorage())
+  }, [dispatch, searchQuery, currentPage])
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      dispatch(resetGifs()) // Reset GIFs when search query changes
-      dispatch(
-        fetchGifs({
-          searchQuery,
-          limit: pagination.limit,
-          offset: pagination.offset,
-        })
-      )
-    }
-  }, [dispatch, searchQuery])
-
-  const fetchMoreGifs = () => {
-    if (!loading && pagination.offset < pagination.totalCount) {
-      dispatch(
-        fetchGifs({
-          searchQuery,
-          limit: pagination.limit,
-          offset: pagination.offset,
-        })
-      )
-    }
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    dispatch(setSearchQuery(e.target.value))
+    setCurrentPage(1) // Reset to page 1 on new search
   }
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value)
+  // Handle page change for pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    dispatch(fetchGIFs({ searchQuery, page: page - 1 }))
   }
 
   return (
-    <div className='p-4'>
+    <div>
       <div className='my-3'>
         <Input
           clearable
@@ -71,22 +49,20 @@ const Home = () => {
         />
       </div>
 
-      {error && <p className='text-red-500'>Error: {error}</p>}
+      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
+        {gifs.map((gif) => (
+          <Gif key={gif.id} gif={gif} />
+        ))}
+      </div>
 
-      <InfiniteScroll
-        dataLength={gifs.length}
-        next={fetchMoreGifs}
-        hasMore={gifs.length < pagination.totalCount}
-        loader={<Spinner />}
-        endMessage={<p className='text-center'>No more GIFs to load.</p>}
-      >
-        {/* <div className='columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2'>  */}
-        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
-          {gifs.map((gif) => (
-            <Gif key={gif.id} gif={gif} />
-          ))}
-        </div>
-      </InfiniteScroll>
+      {status === 'loading' && <Spinner />}
+
+      <Pagination
+        total={Math.ceil(gifs.length / 50)}
+        initialPage={currentPage}
+        onChange={handlePageChange}
+        className='mt-4'
+      />
     </div>
   )
 }
