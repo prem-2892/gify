@@ -31,7 +31,7 @@ const Gif = ({ gif }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link href={`/${gif.type}s/${gif.slug}`} key={gif.id}>
+      <Link href={`/gifs/${gif.id}`} key={gif.id}>
         <div className='w-full aspect-video mb-2 relative bg-png-pattern cursor-pointer group'>
           <img
             src={gif?.images?.fixed_width.webp}

@@ -13,7 +13,8 @@ const Nav = () => {
       <Link href='/'>
         <h2>Logo</h2>
       </Link>
-      <div className=''>
+      <div className='flex flex-row items-center gap-3'>
+        <Link href='/favorits'>Favortis</Link>
         {user === null ? (
           <Link href={'/login'}>
             <Button radius='sm'>Login</Button>
